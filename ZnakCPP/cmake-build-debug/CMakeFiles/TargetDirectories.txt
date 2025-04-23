@@ -1,0 +1,3 @@
+/Users/oleg/myfiles/PROJEKTS_PYTHON/LETI_znak/Leti_Znak_Py_Cpp/ZnakCPP/cmake-build-debug/CMakeFiles/ZnakCPP.dir
+/Users/oleg/myfiles/PROJEKTS_PYTHON/LETI_znak/Leti_Znak_Py_Cpp/ZnakCPP/cmake-build-debug/CMakeFiles/edit_cache.dir
+/Users/oleg/myfiles/PROJEKTS_PYTHON/LETI_znak/Leti_Znak_Py_Cpp/ZnakCPP/cmake-build-debug/CMakeFiles/rebuild_cache.dir
