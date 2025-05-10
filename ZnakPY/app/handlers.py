@@ -6,24 +6,14 @@ from app.keyboards import menu
 
 router = Router()
 
+
 @router.message(CommandStart())
 async def cmd_start(message: Message):
-    await message.answer(
-        f"Привет, {message.from_user.first_name}!",
-        reply_markup=menu)
-    try:
-        # Получаем данные из сообщения
-        user = message.from_user
-        success = await add_user(
-            tg_id=user.id,
-            username=user.username or "unknown"  # На случай, если username не указан
-        )
+    result = await add_user(message.from_user.id, message.from_user.username or "unknown")
 
-        if success:
-            await message.answer("✅ Ваши данные сохранены!")
-        else:
-            await message.answer("❌ Ошибка сохранения данных")
-
-    except Exception as e:
-        await message.answer("⚠️ Произошла техническая ошибка")
-
+    if result == "created":
+        await message.answer("✅ Вы зарегистрированы!")
+    elif result == "exists":
+        await message.answer("ℹ️ Вы уже зарегистрированы")
+    else:
+        await message.answer("❌ Ошибка регистрации")
