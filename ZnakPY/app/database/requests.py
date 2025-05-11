@@ -1,75 +1,3 @@
-# from app.database.db_client import call_cpp
-#
-#
-# async def get_user(tg_id: int) -> dict | None:
-#     response = call_cpp("get_user", {"tg_id": tg_id})
-#     return response if response else None
-#
-#
-# # async def add_user(tg_id: int, username: str, first_name: str, last_name: str, number: str) -> bool:
-# #     response = call_cpp("add_user", {
-# #         "tg_id": tg_id,
-# #         "tg_username": username,
-# #         "first_name": first_name,
-# #         "last_name": last_name,
-# #         "number": number,
-# #         "in_bot_name": None,
-# #         "sex": None,
-# #         "years": None,
-# #         "unic_your_id": None,
-# #         "unic_wanted_id": None,
-# #         "status": 1
-# #     })
-# #     return response.get("status") == "success"
-#
-# async def add_user(tg_id: int, username: str, first_name: str, last_name: str, number: str) -> bool:
-#     response = call_cpp("add_user", {
-#         "tg_id": tg_id,
-#         "tg_username": username,
-#         "first_name": first_name,
-#         "last_name": last_name,
-#         "number": number,
-#         "in_bot_name": None,
-#         "sex": None,
-#         "years": None,
-#         "unic_your_id": None,
-#         "unic_wanted_id": None,
-#         "status": 1
-#     })
-#     print("add_user response:", response)
-#     return response.get("status") == "success"
-#
-#
-# async def update_profile(tg_id: int, in_bot_name: str, sex: str, years: int) -> bool:
-#     response = call_cpp("update_profile", {
-#         "tg_id": tg_id,
-#         "in_bot_name": in_bot_name,
-#         "sex": sex,
-#         "years": years
-#     })
-#     return response.get("status") == "success"
-#
-#
-# async def update_questionnaire(tg_id: int, unic_your_id: str, unic_wanted_id: str) -> bool:
-#     response = call_cpp("update_questionnaire", {
-#         "tg_id": tg_id,
-#         "unic_your_id": unic_your_id,
-#         "unic_wanted_id": unic_wanted_id
-#     })
-#     return response.get("status") == "success"
-#
-#
-# async def update_user_status(tg_id: int, status: int) -> bool:
-#     response = call_cpp("update_status", {
-#         "tg_id": tg_id,
-#         "status": status
-#     })
-#     return response.get("status") == "success"
-#
-#
-# async def get_users_count() -> int:
-#     response = call_cpp("get_users_count", {})
-#     return response.get("count", 0)
 import logging
 from typing import Optional, Dict, Any
 from pathlib import Path
@@ -199,7 +127,7 @@ async def update_questionnaire(
     if unic_wanted_id is not None:
         request["unic_wanted_id"] = unic_wanted_id
 
-
+    # print(f"REQUEST TO UNIC: {request}")
     response = call_cpp(request)
     print(f"Update_2 user response: {response}")
 

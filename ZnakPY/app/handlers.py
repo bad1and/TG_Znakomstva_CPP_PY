@@ -121,10 +121,9 @@ async def ask_question(message: Message, state: FSMContext, question_id: int):
             reply_markup=kb.get_question_keyboard(question_id)
         )
     else:
-        await ask_wanted_question(message, state, 1)
+        await ask_wanted_question(message, state, 1,message.from_user.id)
 
-
-async def ask_wanted_question(message: Message, state: FSMContext, question_id: int):
+async def ask_wanted_question(message: Message, state: FSMContext, question_id: int, user_id: int):
     if question_id in questions_wanted:
         await message.answer(
             questions_wanted[question_id]["question"],
@@ -133,12 +132,12 @@ async def ask_wanted_question(message: Message, state: FSMContext, question_id: 
     else:
         data = await state.get_data()
         await rq.update_questionnaire(
-            tg_id=message.from_user.id,
+            tg_id=user_id,
             unic_your_id=";".join(data.get("your_answers", [])),
             unic_wanted_id=";".join(data.get("wanted_answers", []))
         )
 
-        if message.from_user.id == int(os.getenv('ADMIN_ID')):
+        if user_id == int(os.getenv('ADMIN_ID')):
             await message.answer("Готово админ", reply_markup=kb.admin_menu)
         else:
             await message.answer(
@@ -168,7 +167,7 @@ async def handle_wanted_answer(callback: CallbackQuery, state: FSMContext):
     answers.append(answer_index)
     await state.update_data(wanted_answers=answers)
     await callback.message.delete()
-    await ask_wanted_question(callback.message, state, int(question_id) + 1)
+    await ask_wanted_question(callback.message, state, int(question_id) + 1, callback.from_user.id)
     await callback.answer()
 
 
