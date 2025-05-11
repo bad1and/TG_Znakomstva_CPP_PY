@@ -224,9 +224,13 @@ async def update_status(callback: CallbackQuery):
         await callback.answer("❌ Ошибка обновления")
 
 
+
+
 @router.message(F.text == 'Искать партнера 😏')
 async def find_partner(message: Message):
         await message.answer("Функция в разработке!", reply_markup=kb.menu)
+
+
 
 
 # ---------- Админка ----------

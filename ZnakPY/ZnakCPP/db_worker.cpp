@@ -171,7 +171,7 @@ std::string handle_request(const std::string& json_str) {
                     // Формируем ответ со всеми полями
                     response["id"] = sqlite3_column_int(stmt, 0);
                     response["tg_id"] = sqlite3_column_int(stmt, 1);
-            
+
                     // Обрабатываем текстовые поля с проверкой на NULL
                     auto safe_column_text = [](sqlite3_stmt* stmt, int col) -> json {
                         const unsigned char* text = sqlite3_column_text(stmt, col);
