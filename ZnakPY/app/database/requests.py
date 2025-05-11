@@ -153,8 +153,6 @@ async def update_user_status(tg_id: int, status: int) -> bool:
     return response["status"] == "success"
 
 
-
-
 async def get_users_count() -> int:
     """Get total count of users"""
     response = call_cpp({
@@ -166,3 +164,55 @@ async def get_users_count() -> int:
         return 0
 
     return response["count"]
+
+
+
+
+
+
+
+async def get_active_user(tg_id: int) -> dict | None:
+    request = {
+        "action": "get_user",
+        "tg_id": tg_id,
+        "db_path": str(Config.DB_PATH)
+    }
+
+    response = call_cpp(request)
+
+    if response.get("error"):
+        print(f"❌ Ошибка получения пользователя: {response['error']}")
+        return None
+
+    if response.get("status") == 1:
+        return response
+
+    print(f"ℹ️ Пользователь найден, но неактивен: {tg_id}")
+    return None
+
+
+
+async def find_matching_users(user: dict) -> list[dict]:
+    params = {
+        "action": "get_matching_users",
+        "tg_id": user.get("tg_id"),
+        "sex": user.get("sex"),
+        "unic_wanted_id": user.get("unic_wanted_id"),
+        "status": user.get("status", 1),
+        "db_path": str(Config.DB_PATH)
+    }
+
+    response = call_cpp(params)
+
+    if response.get("error"):
+        print(f"❌ Ошибка поиска партнёров: {response['error']}")
+        return []
+
+    matches = response.get("matches")
+    if isinstance(matches, list):
+        return matches
+
+    print("⚠️ Неверный формат ответа от C++:", response)
+    return []
+
+

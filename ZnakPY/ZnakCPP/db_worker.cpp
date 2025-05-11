@@ -197,6 +197,45 @@ std::string handle_request(const std::string& json_str) {
             }
         }
 
+        else if (action == "get_matching_users") {
+            const char* sql = "SELECT * FROM UsersInfo WHERE tg_id != ? AND sex != ? AND status = ?";
+            sqlite3_stmt* stmt;
+
+            if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+                sqlite3_bind_int(stmt, 1, request["tg_id"].get<int>());
+                sqlite3_bind_text(stmt, 2, request["sex"].get<std::string>().c_str(), -1, SQLITE_TRANSIENT);
+                sqlite3_bind_int(stmt, 3, request["status"].get<int>());
+
+                json matches = json::array();
+
+                while (sqlite3_step(stmt) == SQLITE_ROW) {
+                    std::string unic_your_id = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
+                    std::string user_unic_wanted_id = request["unic_wanted_id"].get<std::string>();
+
+                    int same = 0;
+                    for (size_t i = 0; i < std::min(unic_your_id.size(), user_unic_wanted_id.size()); ++i)
+                        if (unic_your_id[i] == user_unic_wanted_id[i]) same++;
+
+                    bool perfect = unic_your_id == user_unic_wanted_id;
+                    bool similar = same >= (int)unic_your_id.size() - 1;
+
+                    if (perfect || similar) {
+                        matches.push_back({
+                            {"tg_id", sqlite3_column_int(stmt, 1)},
+                            {"tg_username", reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2))},
+                            {"in_bot_name", reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6))},
+                            {"years", sqlite3_column_int(stmt, 8)},
+                            {"unic_your_id", unic_your_id}
+                        });
+                    }
+                }
+                response["matches"] = matches;
+                sqlite3_finalize(stmt);
+            }
+        }
+
+
+
     } catch (const std::exception& e) {
         response["error"] = e.what();
     }

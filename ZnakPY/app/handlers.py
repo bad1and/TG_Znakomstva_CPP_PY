@@ -9,6 +9,9 @@ import app.database.requests as rq
 import app.keyboards as kb
 from app.models import RegistrationState
 from app.questions import questions, questions_wanted
+from app.database import requests as rq
+from app.matching import show_partner_profile
+
 
 router = Router()
 
@@ -227,8 +230,22 @@ async def update_status(callback: CallbackQuery):
 
 
 @router.message(F.text == 'Искать партнера 😏')
-async def find_partner(message: Message):
-        await message.answer("Функция в разработке!", reply_markup=kb.menu)
+async def find_partner(message: Message, state: FSMContext):
+    user = await rq.get_active_user(message.from_user.id)
+    if not user:
+        await message.answer(
+            'Ваша анкета отключена. Для поиска включите ее в меню "Моя анкета 🫵"',
+            reply_markup=kb.admin_menu if message.from_user.id == int(os.getenv('ADMIN_ID')) else kb.menu
+        )
+        return
+
+    matched_users = await rq.find_matching_users(user)
+    if not matched_users:
+        await message.answer("Совпадений не найдено.")
+        return
+
+    await state.update_data(matched_users=matched_users)
+    await show_partner_profile(message, matched_users, 0, user["unic_wanted_id"])
 
 
 
