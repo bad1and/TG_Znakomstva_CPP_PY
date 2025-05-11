@@ -69,8 +69,8 @@ async def process_name(message: Message, state: FSMContext):
 @router.message(RegistrationState.waiting_for_sex)
 async def process_sex(message: Message, state: FSMContext):
     sex_map = {
-        "Мужской 🙋‍♂️": "male",
-        "Женский 🙋‍♀️": "female"
+        "Мужской 🙋‍♂️": "man",
+        "Женский 🙋‍♀️": "woman"
     }
 
     if message.text not in sex_map:
@@ -212,12 +212,6 @@ async def change_status(message: Message):
         reply_markup=kb.status_keyboard()
     )
 
-
-@router.message(F.text == 'Искать партнера 😏')
-async def find_partner(message: Message):
-        await message.answer("Функция в разработке!", reply_markup=kb.menu)
-
-
 @router.callback_query(F.data.in_(["enable_profile", "disable_profile"]))
 async def update_status(callback: CallbackQuery):
     new_status = 1 if callback.data == "enable_profile" else 0
@@ -228,6 +222,11 @@ async def update_status(callback: CallbackQuery):
         await callback.answer("Статус обновлен ✅")
     else:
         await callback.answer("❌ Ошибка обновления")
+
+
+@router.message(F.text == 'Искать партнера 😏')
+async def find_partner(message: Message):
+        await message.answer("Функция в разработке!", reply_markup=kb.menu)
 
 
 # ---------- Админка ----------

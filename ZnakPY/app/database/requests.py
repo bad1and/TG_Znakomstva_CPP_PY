@@ -136,37 +136,6 @@ async def update_questionnaire(
 
     return response["status"] == "success"
 
-# async def update_questionnaire(
-#         tg_id: int,
-#         unic_your_id: str,
-#         unic_wanted_id: str
-# ) -> bool:
-#     """Update user questionnaire data"""
-#     response = call_cpp({
-#         "action": "update_questionnaire",
-#         "tg_id": tg_id,
-#         "unic_your_id": unic_your_id,
-#         "unic_wanted_id": unic_wanted_id,
-#         "db_path": str(Config.DB_PATH)
-#     })
-#
-#     print(f"Update_2 user response: {response}")
-#     if not _validate_response(response, ["status"]):
-#         return False
-#
-#     return response["status"] == "success"
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 async def update_user_status(tg_id: int, status: int) -> bool:
@@ -182,6 +151,8 @@ async def update_user_status(tg_id: int, status: int) -> bool:
         return False
 
     return response["status"] == "success"
+
+
 
 
 async def get_users_count() -> int:
