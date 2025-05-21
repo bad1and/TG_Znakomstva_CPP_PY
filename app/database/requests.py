@@ -1,10 +1,9 @@
-import logging
+from app.logger import logger
 from typing import Optional, Dict, Any
 
 from app.config import Config
 from app.database.db_client import call_cpp
 
-logger = logging.getLogger(__name__)
 
 
 def _validate_response(response: Dict[str, Any], required_fields: list = None) -> bool:
@@ -56,7 +55,8 @@ async def add_user(
     }
 
     response = call_cpp(request)
-    print(f"Add user response: {response}")
+
+    # logger.debug(f"Add user response: {response}")
 
     if not _validate_response(response, ["status"]):
         return False
@@ -99,7 +99,8 @@ async def update_profile(
         request["years"] = years
 
     response = call_cpp(request)
-    print(f"Update user response: {response}")
+
+    # logger.debug(f"Update user response: {response}")
 
     if not _validate_response(response, ["status"]):
         return False
@@ -124,9 +125,9 @@ async def update_questionnaire(
     if unic_wanted_id is not None:
         request["unic_wanted_id"] = unic_wanted_id
 
-    # print(f"REQUEST TO UNIC: {request}")
+#     # logger.debug()(f"REQUEST TO UNIC: {request}")
     response = call_cpp(request)
-    print(f"Update_2 user response: {response}")
+    # logger.debug(f"Update_2 user response: {response}")
 
     if not _validate_response(response, ["status"]):
         return False
@@ -156,6 +157,8 @@ async def get_users_count() -> int:
         "db_path": str(Config.DB_PATH)
     })
 
+
+
     if not _validate_response(response, ["count"]):
         return 0
 
@@ -172,13 +175,13 @@ async def get_active_user(tg_id: int) -> dict | None:
     response = call_cpp(request)
 
     if response.get("error"):
-        print(f"❌ Ошибка получения пользователя: {response['error']}")
+#         logger.debug(f"❌ Ошибка получения пользователя: {response['error']}")
         return None
 
     if response.get("status") == 1:
         return response
 
-    print(f"ℹ️ Пользователь найден, но неактивен: {tg_id}")
+#     logger.debug(f"ℹ️ Пользователь найден, но неактивен: {tg_id}")
     return None
 
 
@@ -195,12 +198,12 @@ async def find_matching_users(user: dict) -> list[dict]:
     response = call_cpp(params)
 
     if response.get("error"):
-        print(f"❌ Ошибка поиска партнёров: {response['error']}")
+#         logger.debug(f"❌ Ошибка поиска партнёров: {response['error']}")
         return []
 
     matches = response.get("matches")
     if isinstance(matches, list):
         return matches
 
-    print("⚠️ Неверный формат ответа от C++:", response)
+#     logger.debug("⚠️ Неверный формат ответа от C++:", response)
     return []
