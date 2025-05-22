@@ -8,7 +8,7 @@ using namespace std; // чтобы не писать std:: каждый раз
 
 using json = nlohmann::json;
 
-
+// для одного пользователя, совпавшего по критериям
 struct MatchUser {
     int tg_id;
     std::string tg_username;
@@ -16,7 +16,7 @@ struct MatchUser {
     int years;
     std::string unic_your_id;
     int match_percent;
-
+    // Метод преобразования структуры в json
     json to_json() const {
         return {
                 {"tg_id", tg_id},
@@ -43,20 +43,20 @@ class MatchList {
     MatchNode* tail = nullptr;
 
 public:
-    void push_back(const MatchUser& user) {
+    void push_back(const MatchUser& user) { // Добавление в конец списка
         MatchNode* node = new MatchNode(user, tail, nullptr);
         if (tail) tail->next = node;
         tail = node;
         if (!head) head = node;
     }
-
+    // Преобразование всего списка в массив json
     json to_json_array() const {
         json result = json::array();
         for (MatchNode* n = head; n; n = n->next)
             result.push_back(n->value.to_json());
         return result;
     }
-
+    // Деструктор
     ~MatchList() {
         MatchNode* curr = head;
         while (curr) {
@@ -65,7 +65,7 @@ public:
             delete tmp;
         }
     }
-
+    // Сортировка по убыванию процента
     void sort_by_match_percent() {
         if (!head || !head->next) return;
 
@@ -75,12 +75,12 @@ public:
             nodes.push_back(n);
         }
 
-        // Сортировка по убыванию match_percent
+        // Сортировка по убыванию
         std::sort(nodes.begin(), nodes.end(), [](MatchNode* a, MatchNode* b) {
             return a->value.match_percent > b->value.match_percent;
         });
 
-        // Перестройка связей
+        // Перестройка указ
         head = nodes[0];
         head->prev = nullptr;
         for (size_t i = 0; i < nodes.size(); ++i) {
@@ -93,18 +93,15 @@ public:
 };
 
 
-
-
-
-
+// ошибки stderr
 void log_error(const std::string &message) {
     std::cerr << "[ERROR] " << message << std::endl;
 }
-
+// ДеБуг
 void log_debug(const std::string &message) {
     std::cerr << "[DEBUG] " << message << std::endl;
 }
-
+//СОздание БД если отсутствует
 void init_db(sqlite3 *db) {
     const char *sql =
             "CREATE TABLE IF NOT EXISTS UsersInfo ("
@@ -127,7 +124,7 @@ void init_db(sqlite3 *db) {
         sqlite3_free(err_msg);
     }
 }
-
+// Привязка текст параметра
 void bind_text_param(sqlite3_stmt *stmt, int idx, const json &j, const std::string &field) {
     if (j.contains(field) && !j[field].is_null()) {
         sqlite3_bind_text(stmt, idx, j[field].get<std::string>().c_str(), -1, SQLITE_TRANSIENT);
@@ -135,7 +132,7 @@ void bind_text_param(sqlite3_stmt *stmt, int idx, const json &j, const std::stri
         sqlite3_bind_null(stmt, idx);
     }
 }
-
+// Привязка числ параметра
 void bind_int_param(sqlite3_stmt *stmt, int idx, const json &j, const std::string &field, int default_val = 0) {
     if (j.contains(field) && !j[field].is_null()) {
         sqlite3_bind_int(stmt, idx, j[field].get<int>());
@@ -149,7 +146,7 @@ std::string handle_request(const std::string &json_str) {
     sqlite3 *db = nullptr;
 
     try {
-        json request = json::parse(json_str);
+        json request = json::parse(json_str);// Парсим входной JSON
         std::string db_path = request["db_path"].get<std::string>();
 
         if (sqlite3_open(db_path.c_str(), &db) != SQLITE_OK) {
@@ -157,9 +154,10 @@ std::string handle_request(const std::string &json_str) {
             return response.dump();
         }
 
-        init_db(db);
+        init_db(db); // если бд нету создадим
         std::string action = request["action"];
 
+        //экшены от РЕВЕСТТОВ ==> ХЭНДЛЕРЫ
         if (action == "add_user") {
             const char *sql = "INSERT OR IGNORE INTO UsersInfo ("
                     "tg_id, tg_username, first_name, last_name, number, "
@@ -275,11 +273,13 @@ std::string handle_request(const std::string &json_str) {
             } else {
                 response["error"] = sqlite3_errmsg(db);
             }
+
         } else if (action == "get_matching_users") {
             const char* sql = "SELECT * FROM UsersInfo WHERE tg_id != ? AND sex != ? AND status = ?";
             sqlite3_stmt* stmt;
 
             if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
+                // Привязка параметров запроса
                 sqlite3_bind_int(stmt, 1, request["tg_id"].get<int>());
                 sqlite3_bind_text(stmt, 2, request["sex"].get<std::string>().c_str(), -1, SQLITE_TRANSIENT);
                 sqlite3_bind_int(stmt, 3, request["status"].get<int>());
@@ -289,6 +289,7 @@ std::string handle_request(const std::string &json_str) {
 
                 MatchList list;
 
+                // Проход по всем
                 while (sqlite3_step(stmt) == SQLITE_ROW) {
                     const char* raw_unic = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
                     if (!raw_unic) continue;
@@ -304,6 +305,7 @@ std::string handle_request(const std::string &json_str) {
 
                     if (perfect || similar) {
                         double match_percent = (total > 0) ? (100.0 * same / total) : 0.0;
+                        // Создание структуры и добавление в список
                         MatchUser mu = {
                             .tg_id = sqlite3_column_int(stmt, 1),
                             .tg_username = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)),
@@ -316,23 +318,23 @@ std::string handle_request(const std::string &json_str) {
                     }
                 }
 
-                list.sort_by_match_percent();
+                list.sort_by_match_percent();// Сортировка по убыванию
 
-                response["matches"] = list.to_json_array();
+                response["matches"] = list.to_json_array();//Обратно в json
                 sqlite3_finalize(stmt);
             }
         }
 
 
     } catch (const std::exception &e) {
-        response["error"] = e.what();
+        response["error"] = e.what();// если возникло искл
     }
 
     if (db) {
         sqlite3_close(db);
     }
 
-    return response.dump();
+    return response.dump();// отправка json ответа
 }
 
 int main(int argc, char *argv[]) {

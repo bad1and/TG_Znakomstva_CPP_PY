@@ -222,6 +222,15 @@ ZnakCPP_IS_TOP_LEVEL:STATIC=ON
 //Value Computed by CMake
 ZnakCPP_SOURCE_DIR:STATIC=/Users/oleg/myfiles/PROJEKTS_PYTHON/LETI_znak/Leti_Znak_Py_Cpp/ZnakPY/ZnakCPP
 
+//Value Computed by CMake
+db_worker_BINARY_DIR:STATIC=/Users/oleg/myfiles/PROJEKTS_PYTHON/LETI_znak/Leti_Znak_Py_Cpp/ZnakPY/ZnakCPP/cmake-build-debug
+
+//Value Computed by CMake
+db_worker_IS_TOP_LEVEL:STATIC=ON
+
+//Value Computed by CMake
+db_worker_SOURCE_DIR:STATIC=/Users/oleg/myfiles/PROJEKTS_PYTHON/LETI_znak/Leti_Znak_Py_Cpp/ZnakPY/ZnakCPP
+
 
 ########################
 # INTERNAL cache entries
