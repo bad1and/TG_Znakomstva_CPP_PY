@@ -22,6 +22,9 @@ def call_cpp(request: Dict[str, Any]) -> Dict[str, Any]:
 
         # logger.debug(f"DB_CLIENT result.subprocess: {result}")
 
+        # print(f"DB_CLIENT result.subprocess: {result}")
+
+
         if result.returncode != 0:
             logger.critical(f"C++ worker failed with code {result.returncode}: {result.stderr}")
             return {"error": result.stderr or "C++ worker failed"}

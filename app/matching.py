@@ -3,7 +3,7 @@ from aiogram.types import Message, BufferedInputFile
 from app.keyboards import partner_navigation_keyboard
 
 
-async def show_partner_profile(message: Message, users, index: int, wanted_id: str):
+async def show_partner_profile(message: Message, users, index: int):
     partner = users[index]
     user_profile_photo = await message.bot.get_user_profile_photos(partner["tg_id"], limit=1)
 
@@ -14,9 +14,11 @@ async def show_partner_profile(message: Message, users, index: int, wanted_id: s
         file_bytes = BytesIO(file.read())
         file_bytes.seek(0)
 
+    match_percent = partner.get("match_percent", 0)
+
     match_type = (
-        "100% совпадение" if partner["unic_your_id"] == wanted_id
-        else "Похожий партнер (не 100%)"
+        "🎯 100% совпадение" if match_percent == 100
+        else f"🤝 Совпадение: {match_percent}%"
     )
 
     profile_text = (
@@ -36,3 +38,4 @@ async def show_partner_profile(message: Message, users, index: int, wanted_id: s
         )
     else:
         await message.answer(profile_text, reply_markup=keyboard)
+

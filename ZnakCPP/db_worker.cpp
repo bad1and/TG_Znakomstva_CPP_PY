@@ -4,7 +4,98 @@
 #include <string>
 
 
+using namespace std; // чтобы не писать std:: каждый раз
+
 using json = nlohmann::json;
+
+
+struct MatchUser {
+    int tg_id;
+    std::string tg_username;
+    std::string in_bot_name;
+    int years;
+    std::string unic_your_id;
+    int match_percent;
+
+    json to_json() const {
+        return {
+                {"tg_id", tg_id},
+                {"tg_username", tg_username},
+                {"in_bot_name", in_bot_name},
+                {"years", years},
+                {"unic_your_id", unic_your_id},
+                {"match_percent", match_percent}
+        };
+    }
+};
+
+struct MatchNode {
+    MatchUser value;
+    MatchNode* prev;
+    MatchNode* next;
+
+    MatchNode(const MatchUser& val, MatchNode* p = nullptr, MatchNode* n = nullptr)
+        : value(val), prev(p), next(n) {}
+};
+
+class MatchList {
+    MatchNode* head = nullptr;
+    MatchNode* tail = nullptr;
+
+public:
+    void push_back(const MatchUser& user) {
+        MatchNode* node = new MatchNode(user, tail, nullptr);
+        if (tail) tail->next = node;
+        tail = node;
+        if (!head) head = node;
+    }
+
+    json to_json_array() const {
+        json result = json::array();
+        for (MatchNode* n = head; n; n = n->next)
+            result.push_back(n->value.to_json());
+        return result;
+    }
+
+    ~MatchList() {
+        MatchNode* curr = head;
+        while (curr) {
+            MatchNode* tmp = curr;
+            curr = curr->next;
+            delete tmp;
+        }
+    }
+
+    void sort_by_match_percent() {
+        if (!head || !head->next) return;
+
+        // Сбор всех узлов в вектор
+        std::vector<MatchNode*> nodes;
+        for (MatchNode* n = head; n; n = n->next) {
+            nodes.push_back(n);
+        }
+
+        // Сортировка по убыванию match_percent
+        std::sort(nodes.begin(), nodes.end(), [](MatchNode* a, MatchNode* b) {
+            return a->value.match_percent > b->value.match_percent;
+        });
+
+        // Перестройка связей
+        head = nodes[0];
+        head->prev = nullptr;
+        for (size_t i = 0; i < nodes.size(); ++i) {
+            nodes[i]->next = (i + 1 < nodes.size()) ? nodes[i + 1] : nullptr;
+            nodes[i]->prev = (i > 0) ? nodes[i - 1] : nullptr;
+        }
+        tail = nodes.back();
+    }
+
+};
+
+
+
+
+
 
 void log_error(const std::string &message) {
     std::cerr << "[ERROR] " << message << std::endl;
@@ -185,41 +276,54 @@ std::string handle_request(const std::string &json_str) {
                 response["error"] = sqlite3_errmsg(db);
             }
         } else if (action == "get_matching_users") {
-            const char *sql = "SELECT * FROM UsersInfo WHERE tg_id != ? AND sex != ? AND status = ?";
-            sqlite3_stmt *stmt;
+            const char* sql = "SELECT * FROM UsersInfo WHERE tg_id != ? AND sex != ? AND status = ?";
+            sqlite3_stmt* stmt;
 
             if (sqlite3_prepare_v2(db, sql, -1, &stmt, nullptr) == SQLITE_OK) {
                 sqlite3_bind_int(stmt, 1, request["tg_id"].get<int>());
                 sqlite3_bind_text(stmt, 2, request["sex"].get<std::string>().c_str(), -1, SQLITE_TRANSIENT);
                 sqlite3_bind_int(stmt, 3, request["status"].get<int>());
 
-                json matches = json::array();
+                std::string user_unic_wanted_id = request["unic_wanted_id"].get<std::string>();
+                int allowed_mismatches = request.value("max_dopusk", 2);
+
+                MatchList list;
 
                 while (sqlite3_step(stmt) == SQLITE_ROW) {
-                    std::string unic_your_id = reinterpret_cast<const char *>(sqlite3_column_text(stmt, 9));
-                    std::string user_unic_wanted_id = request["unic_wanted_id"].get<std::string>();
+                    const char* raw_unic = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 9));
+                    if (!raw_unic) continue;
 
+                    std::string unic_your_id = raw_unic;
+                    int total = std::min(unic_your_id.size(), user_unic_wanted_id.size());
                     int same = 0;
-                    for (size_t i = 0; i < std::min(unic_your_id.size(), user_unic_wanted_id.size()); ++i)
-                        if (unic_your_id[i] == user_unic_wanted_id[i]) same++;
+                    for (int i = 0; i < total; ++i)
+                        if (unic_your_id[i] == user_unic_wanted_id[i]) ++same;
 
                     bool perfect = unic_your_id == user_unic_wanted_id;
-                    bool similar = same >= (int) unic_your_id.size() - 1;
+                    bool similar = same >= total - allowed_mismatches;
 
                     if (perfect || similar) {
-                        matches.push_back({
-                            {"tg_id", sqlite3_column_int(stmt, 1)},
-                            {"tg_username", reinterpret_cast<const char *>(sqlite3_column_text(stmt, 2))},
-                            {"in_bot_name", reinterpret_cast<const char *>(sqlite3_column_text(stmt, 6))},
-                            {"years", sqlite3_column_int(stmt, 8)},
-                            {"unic_your_id", unic_your_id}
-                        });
+                        double match_percent = (total > 0) ? (100.0 * same / total) : 0.0;
+                        MatchUser mu = {
+                            .tg_id = sqlite3_column_int(stmt, 1),
+                            .tg_username = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 2)),
+                            .in_bot_name = reinterpret_cast<const char*>(sqlite3_column_text(stmt, 6)),
+                            .years = sqlite3_column_int(stmt, 8),
+                            .unic_your_id = unic_your_id,
+                            .match_percent = static_cast<int>(match_percent + 0.5)
+                        };
+                        list.push_back(mu);
                     }
                 }
-                response["matches"] = matches;
+
+                list.sort_by_match_percent();
+
+                response["matches"] = list.to_json_array();
                 sqlite3_finalize(stmt);
             }
         }
+
+
     } catch (const std::exception &e) {
         response["error"] = e.what();
     }

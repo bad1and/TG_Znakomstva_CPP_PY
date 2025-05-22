@@ -229,7 +229,7 @@ async def update_status(callback: CallbackQuery):
 
 
 @router.message(F.text == 'Искать партнера 😏')
-async def find_partner(message: Message):
+async def find_partner(message: Message, state: FSMContext):
     user = await rq.get_active_user(message.from_user.id)
     if not user:
         await message.answer(
@@ -243,7 +243,43 @@ async def find_partner(message: Message):
         await message.answer("Совпадений не найдено.")
         return
 
-    await show_partner_profile(message, matched_users, 0, user["unic_wanted_id"])
+
+    await state.update_data(
+        matched_users=matched_users,
+        index=0,
+        wanted_id=user["unic_wanted_id"]
+    )
+    await show_partner_profile(message, matched_users, 0)
+
+
+@router.callback_query(F.data.startswith("prev_"))
+async def prev_partner(callback: CallbackQuery, state: FSMContext):
+    user_data = await state.get_data()
+    users = user_data.get("matched_users", [])
+    wanted_id = user_data.get("wanted_id", "")
+    current_index = int(callback.data.split("_")[1])
+    index = current_index - 1 if current_index > 0 else len(users) - 1
+
+    await state.update_data(index=index)
+    await show_partner_profile(callback.message, users, index)
+    await callback.message.delete()
+    await callback.answer()
+
+
+
+@router.callback_query(F.data.startswith("next_"))
+async def next_partner(callback: CallbackQuery, state: FSMContext):
+    user_data = await state.get_data()
+    users = user_data.get("matched_users", [])
+    wanted_id = user_data.get("wanted_id", "")
+    current_index = int(callback.data.split("_")[1])
+    index = current_index + 1 if current_index + 1 < len(users) else 0
+
+    await state.update_data(index=index)
+    await show_partner_profile(callback.message, users, index)
+    await callback.message.delete()
+    await callback.answer()
+
 
 
 # ---------- Админка ----------

@@ -198,12 +198,14 @@ async def find_matching_users(user: dict) -> list[dict]:
     response = call_cpp(params)
 
     if response.get("error"):
-#         logger.debug(f"❌ Ошибка поиска партнёров: {response['error']}")
+        # logger.debug(f"❌ Ошибка поиска партнёров: {response['error']}")
         return []
 
     matches = response.get("matches")
     if isinstance(matches, list):
-        return matches
+        # Оставляем только нужные поля (если вдруг понадобится фильтрация)
+        return sorted(matches, key=lambda m: m.get("match_percent", 0), reverse=True)
 
-#     logger.debug("⚠️ Неверный формат ответа от C++:", response)
+    # logger.debug("⚠️ Неверный формат ответа от C++:", response)
     return []
+
